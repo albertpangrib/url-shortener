@@ -3,9 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Url;
+use App\Models\VisitorLog;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
+use GuzzleHttp\Client;
 
 class UrlController extends Controller
 {
@@ -31,13 +34,12 @@ class UrlController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'original' => ['required', 'url']
+            'original' => ['required', 'url'],
+            'custom_path' => ['nullable', 'alpha_dash', 'unique:urls,uid']
         ]);
 
         $validated['user_id'] = Auth::user()->id ?? null;
-        $validated['uid'] = Str::random(8);
-
-        // dd($validated);
+        $validated['uid'] = $validated['custom_path'] ?? Str::random(8);
 
         Url::create($validated);
 
@@ -50,12 +52,37 @@ class UrlController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Url $url)
+    public function show(Url $url, Request $request)
     {
         $url->increment('clicks');
         $url->save();
 
-        return redirect()->to($url->original);
+        $client = new Client();
+        $headers = [
+            'Authorization' => 'Bearer 8ee4423d8a101a'
+        ];
+
+        $ipInfoUrl = 'http://ipinfo.io/json';
+
+        $response = $client->get($ipInfoUrl, ['headers' => $headers]);
+        $data = json_decode($response->getBody(), true);
+        $ip = $data['ip'];
+        $country = $data['country'] ?? null;
+        $city = $data['city'] ?? null;
+
+        VisitorLog::create([
+            'ip_address' => $ip,
+            'country' => $country,
+            'city' => $city,
+            'url_uid' => $url->uid,
+        ]);
+        $originalUrl = 'original';
+
+        if ($originalUrl) {
+            return redirect(301)->away($url->$originalUrl);
+        } else {
+            return response(404);
+        }
     }
 
     /**

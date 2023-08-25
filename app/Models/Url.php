@@ -17,4 +17,8 @@ class Url extends Model
     {
         return 'uid';
     }
+    public function visitorLogs()
+    {
+        return $this->hasMany(VisitorLog::class, 'url_uid', 'uid');
+    }
 }

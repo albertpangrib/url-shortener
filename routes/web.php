@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UrlController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\DetailsController;
 
 Route::middleware(['auth', 'verified'])->group(function () {
 
@@ -20,3 +21,4 @@ Route::middleware('auth')->group(function () {
 require __DIR__ . '/auth.php';
 
 Route::get('/{url}', [UrlController::class, 'show'])->name('url.show');
+Route::get('/details/{uid}', [DetailsController::class, 'show'])->name('details.show');
